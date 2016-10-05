@@ -3,10 +3,14 @@ defmodule CodeCorps.OrganizationMembershipController do
 
   use CodeCorps.Web, :controller
 
+  import CodeCorps.AuthenticationHelpers, only: [authorize: 2, authorized?: 1]
+
   alias JaSerializer.Params
   alias CodeCorps.OrganizationMembership
 
-  plug :load_and_authorize_resource, model: OrganizationMembership, only: [:create, :update, :delete]
+  plug :load_resource, model: OrganizationMembership, only: [:update], preload: [:organization, :member], as: :organization_membership
+  plug :load_and_authorize_resource, model: OrganizationMembership, only: [:delete]
+
   plug :scrub_params, "data" when action in [:create, :update]
 
   def index(conn, params) do
@@ -31,37 +35,46 @@ defmodule CodeCorps.OrganizationMembershipController do
   def create(conn, %{"data" => data = %{"type" => "organization-membership"}}) do
     changeset = %OrganizationMembership{} |> OrganizationMembership.create_changeset(Params.to_attributes(data))
 
-    case Repo.insert(changeset) do
-      {:ok, membership} ->
-        membership = membership |> Repo.preload([:member, :organization])
+    conn = conn |> authorize(changeset)
 
-        conn
-        |> @analytics.track(:created, membership)
-        |> put_status(:created)
-        |> put_resp_header("location", organization_membership_path(conn, :show, membership))
-        |> render("show.json-api", data: membership)
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> render(CodeCorps.ChangesetView, "error.json-api", changeset: changeset)
+    if conn |> authorized? do
+      case Repo.insert(changeset) do
+        {:ok, membership} ->
+          membership = membership |> Repo.preload([:member, :organization])
+
+          conn
+          |> @analytics.track(:created, membership)
+          |> put_status(:created)
+          |> put_resp_header("location", organization_membership_path(conn, :show, membership))
+          |> render("show.json-api", data: membership)
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(CodeCorps.ChangesetView, "error.json-api", changeset: changeset)
+      end
+    else
+      conn
     end
   end
 
-  def update(conn, %{"id" => id, "data" => data = %{"type" => "organization-membership", "attributes" => _params}}) do
-    membership =
-      OrganizationMembership
-      |> preload([:organization, :member])
-      |> Repo.get!(id)
+  def update(conn, %{"data" => data = %{"type" => "organization-membership", "attributes" => _params}}) do
+    membership = conn.assigns.organization_membership
 
     changeset = membership |> OrganizationMembership.update_changeset(Params.to_attributes(data))
 
-    case Repo.update(changeset) do
-      {:ok, membership} ->
-        render(conn, "show.json-api", data: membership)
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> render(CodeCorps.ChangesetView, "error.json-api", changeset: changeset)
+    conn = conn |> authorize(changeset)
+
+    if conn |> authorized? do
+      case Repo.update(changeset) do
+        {:ok, membership} ->
+          render(conn, "show.json-api", data: membership)
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(CodeCorps.ChangesetView, "error.json-api", changeset: changeset)
+      end
+    else
+      conn
     end
   end
 

@@ -1,6 +1,6 @@
 defmodule CodeCorps.UserCategoryController do
   @analytics Application.get_env(:code_corps, :analytics)
-  
+
   use CodeCorps.Web, :controller
 
   import CodeCorps.AuthenticationHelpers, only: [authorize: 2, authorized?: 1]

@@ -54,8 +54,8 @@ defmodule Canary.Abilities do
     def can?(%User{} = user, :create, Organization), do: OrganizationPolicy.create?(user)
     def can?(%User{} = user, :update, %Organization{} = organization), do: OrganizationPolicy.update?(user, organization)
 
-    def can?(%User{} = user, :create, OrganizationMembership), do: OrganizationMembershipPolicy.create?(user)
-    def can?(%User{} = user, :update, %OrganizationMembership{} = membership), do: OrganizationMembershipPolicy.update?(user, membership)
+    def can?(%User{} = user, :create, %Ecto.Changeset{data: %CodeCorps.OrganizationMembership{}} = changeset), do: OrganizationMembershipPolicy.create?(user, changeset)
+    def can?(%User{} = user, :update, %Ecto.Changeset{data: %CodeCorps.OrganizationMembership{}} = changeset), do: OrganizationMembershipPolicy.update?(user, changeset)
     def can?(%User{} = user, :delete, %OrganizationMembership{} = membership), do: OrganizationMembershipPolicy.delete?(user, membership)
 
     def can?(%User{} = user, :create, Task), do: TaskPolicy.create?(user)

@@ -110,10 +110,8 @@ defmodule CodeCorps.OrganizationMembershipControllerTest do
     end
 
     test "renders page not found when id is nonexistent", %{conn: conn} do
-      assert_error_sent 404, fn ->
-        path = conn |> organization_membership_path(:show, -1)
-        conn |> get(path)
-      end
+      path = conn |> organization_membership_path(:show, -1)
+      assert conn |> get(path) |> json_response(:not_found)
     end
   end
 

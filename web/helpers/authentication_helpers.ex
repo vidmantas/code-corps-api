@@ -22,19 +22,10 @@ defmodule CodeCorps.AuthenticationHelpers do
     |> halt
   end
 
-  def authorized?(conn), do: conn |> Map.get(:assigns) |> Map.get(:authorized)
-
   # Used to authorize a resource we provide on our own
   # We need this to authorize based on changeset, since on some
   # records, some types of changes are valid while others are not
   # This is partially adjusted code, taken from canary
-  def authorize(conn, changeset) do
-    current_user = conn.assigns |> Map.get(:current_user)
-    action = conn.private.phoenix_action
-
-    conn |> assign(:authorized, can?(current_user, action, changeset)) |> handle_unauthorized
-  end
-
   def load_and_authorize_changeset(conn, options) do
     action = conn.private.phoenix_action
 
@@ -46,7 +37,7 @@ defmodule CodeCorps.AuthenticationHelpers do
 
   defp do_init_and_authorize_changeset(conn, model, action) do
     changeset = init_changeset(conn, model, action)
-    conn |> assign(:changeset, changeset) |> authorize(changeset)
+    conn |> assign(:changeset, changeset) |> authorize(changeset, action)
   end
 
   defp init_changeset(conn, model, action) do
@@ -66,4 +57,9 @@ defmodule CodeCorps.AuthenticationHelpers do
   defp get_resource(_conn, model, :create), do: model.__struct__
 
   defp get_changeset_method(action), do: "#{action}_changeset" |> String.to_atom
+
+  def authorize(conn, changeset, action) do
+    current_user = conn.assigns |> Map.get(:current_user)
+    conn |> assign(:authorized, can?(current_user, action, changeset)) |> handle_unauthorized
+  end
 end

@@ -3,8 +3,6 @@ defmodule CodeCorps.OrganizationMembershipController do
 
   use CodeCorps.Web, :controller
 
-  import CodeCorps.AuthenticationHelpers, only: [load_and_authorize_changeset: 2]
-
   alias CodeCorps.OrganizationMembership
 
   plug :load_resource, model: OrganizationMembership, only: [:show], preload: [:organization, :member]
